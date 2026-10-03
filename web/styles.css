@@ -1,0 +1,195 @@
+/*
+  The inbox. Two panes - chats on the left, the conversation on the right - and
+  one at a time on a phone. IRAVI's green, as on the reports console.
+
+  Every colour is a token; the dark blocks redefine the tokens, never the rules.
+*/
+
+:root {
+  color-scheme: light;
+  --brand: #1a5632;
+  --brand-ink: #ffffff;
+  --brand-soft: #e8f1eb;
+  --canvas: #f3f6f3;
+  --surface: #ffffff;
+  --surface-2: #f6f9f7;
+  --ink: #14201a;
+  --ink-2: #3c4c43;
+  --muted: #6d7f75;
+  --line: #e3eae5;
+  --bubble-in: #ffffff;
+  --bubble-out: #dcefe2;
+  --chat-bg: #eef2ee;
+  --tick: #6d7f75;
+  --tick-read: #1f7ae0;
+  --danger: #c62828;
+  --danger-soft: #fdeaea;
+  --gold: #a5600f;
+  --gold-soft: #fdf3e3;
+  --unread: #15803d;
+  --shadow: 0 1px 2px rgba(20, 32, 26, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --brand: #4fae74;
+    --brand-ink: #08160e;
+    --brand-soft: #173524;
+    --canvas: #0e1511;
+    --surface: #151e19;
+    --surface-2: #1b2620;
+    --ink: #e4ece7;
+    --ink-2: #c3d0c8;
+    --muted: #8fa298;
+    --line: #26332c;
+    --bubble-in: #1d2822;
+    --bubble-out: #1f4a32;
+    --chat-bg: #0b120e;
+    --tick: #8fa298;
+    --tick-read: #5fb2ff;
+    --danger: #ff7b7b;
+    --danger-soft: #3a1c1c;
+    --gold: #f0b25e;
+    --gold-soft: #33260f;
+    --unread: #4fd27f;
+    --shadow: none;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --brand: #4fae74;
+  --brand-ink: #08160e;
+  --brand-soft: #173524;
+  --canvas: #0e1511;
+  --surface: #151e19;
+  --surface-2: #1b2620;
+  --ink: #e4ece7;
+  --ink-2: #c3d0c8;
+  --muted: #8fa298;
+  --line: #26332c;
+  --bubble-in: #1d2822;
+  --bubble-out: #1f4a32;
+  --chat-bg: #0b120e;
+  --tick: #8fa298;
+  --tick-read: #5fb2ff;
+  --danger: #ff7b7b;
+  --danger-soft: #3a1c1c;
+  --gold: #f0b25e;
+  --gold-soft: #33260f;
+  --unread: #4fd27f;
+  --shadow: none;
+}
+
+* { box-sizing: border-box; }
+/* The page shows and hides its parts with the `hidden` attribute. A rule below
+   that sets `display` would otherwise win over it - which is how an empty file
+   bar and the "window closed" notice both showed in an open chat. */
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+
+.app { display: grid; grid-template-columns: minmax(280px, 360px) 1fr; height: 100dvh; }
+
+/* ---------------------------------------------------------------- the list */
+
+.list { display: flex; flex-direction: column; background: var(--surface); border-right: 1px solid var(--line); min-height: 0; }
+.list-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.logo { width: 36px; height: 36px; border-radius: 50%; background: #fff; }
+.brand { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.sub { color: var(--muted); font-size: 13px; }
+.list-tools { display: flex; gap: 8px; padding: 10px 14px; }
+.list-tools input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+.chats { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
+.chats li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.chats li:hover { background: var(--surface-2); }
+.chats li.active { background: var(--brand-soft); }
+.chats .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chats .time { color: var(--muted); font-size: 12px; }
+.chats li.has-unread .time { color: var(--unread); font-weight: 600; }
+.chats .preview { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chats .badge { background: var(--unread); color: #fff; border-radius: 10px; font-size: 12px; font-weight: 600; padding: 0 7px; justify-self: end; }
+.chats .open-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--unread); display: inline-block; margin-right: 6px; }
+.empty { color: var(--muted); padding: 16px; text-align: center; }
+.warning { background: var(--gold-soft); color: var(--gold); padding: 8px 14px; font-size: 13px; }
+
+/* ---------------------------------------------------------------- the chat */
+
+.chat { display: flex; flex-direction: column; min-height: 0; background: var(--chat-bg); }
+.placeholder { margin: auto; text-align: center; color: var(--muted); }
+.placeholder img { width: 72px; opacity: 0.8; }
+.chat-head { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.who { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.back { display: none; }
+.window { font-size: 12px; padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
+.window.open { background: var(--brand-soft); color: var(--brand); }
+.window.shut { background: var(--gold-soft); color: var(--gold); }
+
+.messages { flex: 1; overflow-y: auto; padding: 12px 6%; display: flex; flex-direction: column; gap: 4px; }
+.day { align-self: center; background: var(--surface); color: var(--muted); font-size: 12px; padding: 3px 10px; border-radius: 8px; margin: 10px 0 4px; box-shadow: var(--shadow); }
+.bubble { max-width: min(72%, 560px); padding: 6px 9px 4px; border-radius: 10px; box-shadow: var(--shadow); position: relative; overflow-wrap: anywhere; }
+.bubble.in { align-self: flex-start; background: var(--bubble-in); border-top-left-radius: 2px; }
+.bubble.out { align-self: flex-end; background: var(--bubble-out); border-top-right-radius: 2px; }
+.bubble.alert, .bubble.script { opacity: 0.85; }
+.bubble .meta { display: flex; justify-content: flex-end; gap: 6px; align-items: center; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.bubble .label { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.bubble img.media { display: block; max-width: 100%; max-height: 320px; border-radius: 6px; cursor: zoom-in; }
+.bubble video, .bubble audio { display: block; max-width: 100%; }
+.bubble a.doc { display: flex; gap: 8px; align-items: center; padding: 8px; background: var(--surface-2); border-radius: 6px; color: inherit; text-decoration: none; }
+.bubble .quote { border-left: 3px solid var(--brand); background: var(--surface-2); padding: 3px 7px; border-radius: 4px; font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
+.bubble .reactions { position: absolute; bottom: -12px; right: 8px; background: var(--surface); border-radius: 10px; padding: 0 5px; font-size: 13px; box-shadow: var(--shadow); }
+.bubble.has-reactions { margin-bottom: 12px; }
+.bubble .error { color: var(--danger); font-size: 12px; margin-top: 3px; }
+.tick { color: var(--tick); letter-spacing: -3px; }
+.tick.read { color: var(--tick-read); }
+.tick.failed { color: var(--danger); letter-spacing: 0; }
+.text code { background: var(--surface-2); padding: 0 3px; border-radius: 3px; }
+
+.composer, .closed { background: var(--surface); border-top: 1px solid var(--line); padding: 10px 14px; }
+.compose-row { display: flex; gap: 8px; align-items: flex-end; }
+.compose-row textarea { flex: 1; resize: none; max-height: 160px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+.attach { cursor: pointer; font-size: 20px; padding: 6px; }
+.file-chip { display: flex; align-items: center; gap: 8px; background: var(--brand-soft); border-radius: 8px; padding: 4px 8px; margin-bottom: 8px; font-size: 13px; }
+.file-chip span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.closed { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.closed p { margin: 0; color: var(--ink-2); font-size: 14px; }
+
+/* ------------------------------------------------------------- the pieces */
+
+.btn { border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+.btn:hover { border-color: var(--brand); }
+.btn.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); font-weight: 600; }
+.btn:disabled { opacity: 0.55; cursor: progress; }
+.icon-btn { border: 0; background: transparent; cursor: pointer; font-size: 18px; padding: 4px 6px; border-radius: 6px; color: var(--ink-2); }
+.icon-btn:hover { background: var(--surface-2); }
+
+dialog { border: 0; border-radius: 12px; padding: 0; background: var(--surface); color: var(--ink); width: min(520px, calc(100vw - 32px)); box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
+.dialog { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+.dialog h2 { margin: 0; font-size: 18px; }
+.dialog label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink-2); }
+.dialog input, .dialog select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+.template-preview { white-space: pre-wrap; background: var(--bubble-out); border-radius: 8px; padding: 10px; font-size: 14px; }
+.hint { color: var(--muted); font-size: 13px; margin: 0; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 8px; max-width: calc(100vw - 32px); z-index: 10; }
+.toast.error { background: var(--danger); color: #fff; }
+
+/* ------------------------------------------------------------ on a phone */
+
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; }
+  .app.in-chat .list { display: none; }
+  .app:not(.in-chat) .chat { display: none; }
+  .back { display: inline-block; }
+  .messages { padding: 10px 12px; }
+  .bubble { max-width: 86%; }
+  .closed { flex-direction: column; align-items: stretch; }
+}

@@ -1,0 +1,13 @@
+[project]
+name = "wapp-integrations"
+version = "0.1.0"
+description = "WhatsApp inbox and integrations for IRAVI AGRO LIFE LLP"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 120
+src = ["src", "tests"]

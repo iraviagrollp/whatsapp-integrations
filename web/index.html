@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WhatsApp · Iravi Agro Life</title>
+  <link rel="icon" href="static/icon.png">
+  <link rel="stylesheet" href="static/styles.css">
+  <script>
+    // Apply the remembered theme before anything is drawn, so dark does not flash white.
+    try { var t = localStorage.getItem("wapp-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+</head>
+<body>
+  <div class="app" id="app">
+    <aside class="list">
+      <header class="list-head">
+        <img src="static/icon.png" alt="" class="logo">
+        <div class="brand">
+          <strong id="business">Iravi Agro Life LLP</strong>
+          <span class="sub">WhatsApp inbox</span>
+        </div>
+        <button class="icon-btn" id="theme" title="Light / dark">◐</button>
+      </header>
+      <div class="warning" id="webhook-warning" hidden>
+        The webhook is not ready: no app secret is set, so new messages are not being received.
+      </div>
+      <div class="list-tools">
+        <input type="search" id="search" placeholder="Search name or number" autocomplete="off">
+        <button class="btn" id="new-chat" title="Message a number">New</button>
+      </div>
+      <ul class="chats" id="chats"></ul>
+      <p class="empty" id="no-chats" hidden>No messages yet. They appear here as soon as Meta delivers them.</p>
+    </aside>
+
+    <main class="chat" id="chat">
+      <div class="placeholder" id="placeholder">
+        <img src="static/icon.png" alt="">
+        <p>Choose a chat on the left.</p>
+      </div>
+
+      <header class="chat-head" id="chat-head" hidden>
+        <button class="icon-btn back" id="back" title="Back to chats">←</button>
+        <div class="who">
+          <strong id="chat-name"></strong>
+          <span class="sub" id="chat-number"></span>
+        </div>
+        <span class="window" id="window"></span>
+      </header>
+
+      <section class="messages" id="messages" hidden></section>
+
+      <footer class="composer" id="composer" hidden>
+        <div class="file-chip" id="file-chip" hidden>
+          <span id="file-name"></span>
+          <button class="icon-btn" id="file-clear" title="Remove">✕</button>
+        </div>
+        <div class="compose-row">
+          <label class="icon-btn attach" title="Attach a photo, PDF, video or audio">
+            📎<input type="file" id="file" hidden>
+          </label>
+          <textarea id="text" rows="1" placeholder="Type a message"></textarea>
+          <button class="btn primary" id="send">Send</button>
+        </div>
+      </footer>
+
+      <footer class="closed" id="closed" hidden>
+        <p>This person has not written in the last 24 hours. WhatsApp only allows an approved template until they do.</p>
+        <button class="btn primary" id="open-templates">Send a template</button>
+      </footer>
+    </main>
+  </div>
+
+  <dialog id="template-dialog">
+    <form method="dialog" class="dialog" id="template-form">
+      <h2>Send a template</h2>
+      <label>Template
+        <select id="template-select"></select>
+      </label>
+      <div class="template-preview" id="template-preview"></div>
+      <div id="template-fields"></div>
+      <p class="hint" id="template-cost"></p>
+      <div class="dialog-actions">
+        <button class="btn" value="cancel" formnovalidate>Cancel</button>
+        <button class="btn primary" id="template-send" value="send">Send</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="number-dialog">
+    <form method="dialog" class="dialog" id="number-form">
+      <h2>Message a number</h2>
+      <label>Mobile number
+        <input id="number-input" inputmode="tel" placeholder="98490 12345" required>
+      </label>
+      <p class="hint">Someone who has not written to you in the last 24 hours can only be sent a template.</p>
+      <div class="dialog-actions">
+        <button class="btn" value="cancel" formnovalidate>Cancel</button>
+        <button class="btn primary" value="open">Open chat</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" hidden></div>
+  <script src="static/app.js"></script>
+</body>
+</html>

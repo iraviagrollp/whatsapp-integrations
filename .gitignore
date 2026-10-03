@@ -1,0 +1,21 @@
+# Secrets and this machine's settings - never commit.
+config/config.json
+config/*.txt
+
+# The messages themselves, received files, and logs.
+data/
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
