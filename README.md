@@ -60,7 +60,21 @@ Do you need any more support?   [ Yes ]  [ No ]
   on an active customer record in the ERP — spaces removed, a leading 91 or 0
   dropped, and exactly ten digits (starting 6–9) left. Records with no mobile
   are never matched. A number on two records is asked which account.
-- **Everyone else** is left to a person in the inbox, and the alert numbers are told.
+- **Suppliers** (their number on an active supplier record, matched the same
+  way) are left to a person in the inbox, and the alert numbers are told.
+- **Visitors** - on neither master - who greet get their own menu
+  (`bot.visitor` in `config.json`):
+
+  ```
+  Welcome to IRAVI AGRO LIFE LLP.  How can we help you?   [ Reach us ]  [ Talk to us ]
+    Reach us    -> the office as a WhatsApp location pin
+    Talk to us  -> "Feel free to reach out to us on 8977417663 or write to us on ..."
+  30 seconds after their first choice, once: the thank-you with the Instagram link
+  ```
+
+  Either button keeps working until the chat goes idle. Anything else they
+  write goes to a person, and no thank-you is sent if a person replied first.
+- **Anything else** is left to a person in the inbox, and the alert numbers are told.
 - **The bot never talks over staff:** after someone replies from the inbox, it
   stays out of that chat for `pause_after_human_minutes` (60).
 - After the goodbye, the next greeting (or a tap on the template's button)

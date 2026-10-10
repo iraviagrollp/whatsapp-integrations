@@ -14,11 +14,14 @@ from wapp.config import BotConfig
 from wapp.store import Store
 
 OWNER = "919701491148"
+SUPPLIER = "919848012345"
+VISITOR = "919000000001"
 
 
 class FakeReports:
     def __init__(self):
         self.customers = {CUSTOMER: [{"id": "11", "name": "Vijayawada Agri", "city": "Vijayawada", "code": "C1"}]}
+        self.suppliers = {SUPPLIER: [{"id": "21", "name": "Coromandel Fertilisers", "city": "Hyderabad"}]}
         self.down = False
         self.statements = []
         self.balances = {"11": "1234567.5", "12": "-2500"}
@@ -27,6 +30,11 @@ class FakeReports:
         if self.down:
             raise ReportsError("the reports service is not reachable")
         return self.customers.get(wa_id, [])
+
+    def suppliers_by_mobile(self, wa_id):
+        if self.down:
+            raise ReportsError("the reports service is not reachable")
+        return self.suppliers.get(wa_id, [])
 
     def balance(self, account_id, as_on):
         if self.down:
@@ -92,6 +100,87 @@ def test_someone_who_is_not_a_customer_is_left_to_a_person(chat):
     # No menu for them - only the alert to the owner that somebody wrote.
     assert [s["to"] for s in sent] == [OWNER]
     assert "rate of urea" in sent[0]["text"]["body"]
+
+
+@pytest.fixture
+def later(monkeypatch):
+    """The delayed thank-you, held here instead of on a timer: ``later.run()`` sends it."""
+    waiting = []
+    monkeypatch.setattr(botmodule, "run_later", lambda seconds, action: waiting.append((seconds, action)))
+
+    def run():
+        for _seconds, action in waiting:
+            action()
+        waiting.clear()
+
+    later.waiting = waiting
+    later.run = run
+    return later
+
+
+def test_a_visitor_saying_hi_gets_the_visitor_menu(chat):
+    [menu] = chat("Hii", sender=VISITOR)
+    assert menu["to"] == VISITOR
+    assert menu["interactive"]["body"]["text"] == "Welcome to IRAVI AGRO LIFE LLP.\n\nHow can we help you?"
+    assert buttons(menu) == ["Reach us", "Talk to us"]
+
+
+def test_reach_us_sends_the_office_location_then_thanks_half_a_minute_later(chat, graph, later):
+    chat("Hello", sender=VISITOR)
+    [pin] = chat(reply_id="reach_us", title="Reach us", sender=VISITOR)
+    assert pin["type"] == "location"
+    assert pin["location"] == {"latitude": 17.4855564, "longitude": 78.4145767, "name": "IRAVI AGRO LIFE LLP"}
+    assert [seconds for seconds, _ in later.waiting] == [30]
+    before = len(graph.sent)
+    later.run()
+    [thanks] = graph.sent[before:]
+    assert thanks["to"] == VISITOR
+    assert thanks["text"]["body"].startswith("Thanks a lot for reaching out to us!")
+    assert "https://www.instagram.com/iraviagrolife/" in thanks["text"]["body"]
+
+
+def test_talk_to_us_gives_the_number_and_email_and_thanks_only_once(chat, later):
+    chat("Namaste", sender=VISITOR)
+    [contact] = chat(reply_id="talk_to_us", title="Talk to us", sender=VISITOR)
+    assert "8977417663" in contact["text"]["body"] and "info@iraviagrolife.com" in contact["text"]["body"]
+    # The other button still answers, typed as well as tapped - but one thank-you is enough.
+    [pin] = chat("1", sender=VISITOR)
+    assert pin["type"] == "location"
+    assert len(later.waiting) == 1
+
+
+def test_a_visitor_added_to_a_customer_record_gets_the_ledger_menu_on_their_next_hi(chat, reports):
+    chat("Hi", sender=VISITOR)
+    reports.customers[VISITOR] = [{"id": "11", "name": "Vijayawada Agri", "city": "Vijayawada", "code": "C1"}]
+    [menu] = chat("Hi", sender=VISITOR)
+    assert buttons(menu) == ["Ledger", "Balance"]
+
+
+def test_a_visitors_question_is_left_to_a_person(chat):
+    chat("Hi", sender=VISITOR)
+    sent = chat("Do you have dealership in Guntur?", sender=VISITOR)
+    assert [s["to"] for s in sent] == [OWNER]
+
+
+def test_no_thank_you_if_a_person_answers_first(chat, graph, later):
+    chat("Hi", sender=VISITOR)
+    chat(reply_id="talk_to_us", sender=VISITOR)
+    chat.store.add_message(wamid="wamid.HUMAN", wa_id=VISITOR, direction="out", type="text", body="Hello!",
+                           status="accepted", source="inbox", extra={"by": "staff"})
+    before = len(graph.sent)
+    later.run()
+    assert graph.sent[before:] == []
+
+
+def test_a_supplier_saying_hi_is_left_to_a_person(chat):
+    sent = chat("Hi", sender=SUPPLIER)
+    assert [s["to"] for s in sent] == [OWNER]
+
+
+def test_no_visitor_menu_while_the_reports_service_is_down(chat, reports):
+    reports.down = True
+    sent = chat("Hi", sender=VISITOR)
+    assert [s["to"] for s in sent] == [OWNER]
 
 
 def test_ledger_sends_the_pdf_then_asks_for_more(chat, graph, reports):

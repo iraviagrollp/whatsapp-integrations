@@ -34,6 +34,32 @@ DEFAULT_GREETINGS = (
 )
 
 
+DEFAULT_VISITOR_WELCOME = "Welcome to IRAVI AGRO LIFE LLP.\n\nHow can we help you?"
+DEFAULT_VISITOR_CONTACT = ("Feel free to reach out to us on 8977417663 "
+                           "or write to us on info@iraviagrolife.com")
+DEFAULT_VISITOR_THANKS = ("Thanks a lot for reaching out to us!\n"
+                          "We really wish you all the good in the world.\n\n"
+                          "Please stay connected with us by following us on our social platforms\n"
+                          "Instagram -> https://www.instagram.com/iraviagrolife/")
+
+
+@dataclass(frozen=True)
+class VisitorConfig:
+    """The menu for a number on neither the customer nor the supplier master: Reach us / Talk to us."""
+
+    enabled: bool = True
+    welcome: str = DEFAULT_VISITOR_WELCOME
+    #: "Reach us" sends a location pin; with no coordinates, the name and map link as text.
+    location_name: str = "IRAVI AGRO LIFE LLP"
+    latitude: Optional[float] = 17.4855564
+    longitude: Optional[float] = 78.4145767
+    map_link: str = "https://maps.app.goo.gl/tYyU8wLVmwYMdJMV7"
+    contact: str = DEFAULT_VISITOR_CONTACT
+    #: Sent once, this long after their first choice.
+    thanks: str = DEFAULT_VISITOR_THANKS
+    thanks_after_seconds: int = 30
+
+
 @dataclass(frozen=True)
 class BotConfig:
     """The customer menu: Ledger / Balance, answered without anybody at the desk."""
@@ -47,6 +73,7 @@ class BotConfig:
     idle_minutes: int = 30
     #: Once someone replies from the inbox, the bot stays out of that chat for this long.
     pause_after_human_minutes: int = 60
+    visitor: VisitorConfig = field(default_factory=VisitorConfig)
 
 
 @dataclass(frozen=True)
@@ -172,4 +199,26 @@ def _bot(raw: dict) -> BotConfig:
         farewell=raw.get("farewell", defaults.farewell),
         idle_minutes=int(raw.get("idle_minutes", defaults.idle_minutes)),
         pause_after_human_minutes=int(raw.get("pause_after_human_minutes", defaults.pause_after_human_minutes)),
+        visitor=_visitor(raw.get("visitor") or {}),
+    )
+
+
+def _visitor(raw: dict) -> VisitorConfig:
+    raw = {k: v for k, v in raw.items() if not k.startswith("//")}
+    defaults = VisitorConfig()
+
+    def coordinate(key: str) -> Optional[float]:
+        value = raw.get(key, getattr(defaults, key))
+        return None if value in (None, "") else float(value)
+
+    return VisitorConfig(
+        enabled=bool(raw.get("enabled", defaults.enabled)),
+        welcome=raw.get("welcome", defaults.welcome),
+        location_name=raw.get("location_name", defaults.location_name),
+        latitude=coordinate("latitude"),
+        longitude=coordinate("longitude"),
+        map_link=raw.get("map_link", defaults.map_link),
+        contact=raw.get("contact", defaults.contact),
+        thanks=raw.get("thanks", defaults.thanks),
+        thanks_after_seconds=int(raw.get("thanks_after_seconds", defaults.thanks_after_seconds)),
     )

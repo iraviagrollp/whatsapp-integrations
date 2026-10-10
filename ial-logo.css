@@ -1,0 +1,128 @@
+/* ============================================================
+   IAL animated logo — seamless 8-second loop.
+   Build in (0–2 s) → hold with gentle leaf sway → clear (6.6–7.4 s) → repeat.
+   The company name animates in once and then stays put.
+   Theme: follows `.dark` or `[data-theme="dark"]` on any ancestor.
+   Change the speed with --ial-cycle (all timings scale with it).
+   ============================================================ */
+
+.ial-brand {
+  --ial-cycle: 8s;
+  --ial-brown: #723a17;
+  --ial-name: #2e9b36;
+  --ial-llp: #b0682e;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  line-height: 1;
+}
+.dark .ial-brand,
+[data-theme="dark"] .ial-brand {
+  --ial-brown: #a8642f;   /* lifted so the stems stay visible on navy */
+  --ial-name: #3fb950;
+  --ial-llp: #c98a4f;
+}
+
+.ial-logo { height: 56px; width: auto; display: block; overflow: visible; }
+.ial-brown { fill: var(--ial-brown); transition: fill .3s; }
+
+.ial-wipe, .ial-leaf, .ial-leaves { transform-box: fill-box; }
+.ial-wipe--bottom { transform-origin: 0% 50%; }
+.ial-wipe--stem,
+.ial-wipe--frame  { transform-origin: 0% 100%; }
+.ial-leaf         { transform-origin: 2% 98%; }
+.ial-leaves       { transform-origin: 10% 95%; }
+
+/* one shared clock: every part runs the same cycle, so the loop never drifts */
+.ial-wipe--bottom, .ial-wipe--stem, .ial-wipe--frame,
+.ial-leaf, .ial-letter {
+  animation-duration: var(--ial-cycle);
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+}
+.ial-wipe--bottom { animation-name: ial-loop-bottom; }
+.ial-wipe--stem   { animation-name: ial-loop-stem; }
+.ial-wipe--frame  { animation-name: ial-loop-frame; }
+.ial-leaf--left   { animation-name: ial-loop-leaf-left; }
+.ial-leaf--right  { animation-name: ial-loop-leaf-right; }
+.ial-letter--i    { animation-name: ial-loop-i; }
+.ial-letter--a    { animation-name: ial-loop-a; }
+.ial-letter--l    { animation-name: ial-loop-l; }
+
+/* ---------- stems: draw in, then retract last ---------- */
+@keyframes ial-loop-bottom {
+  0%, 1.25%   { transform: scaleX(0); animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  8.1%, 87.5% { transform: none;      animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  92.5%, 100% { transform: scaleX(0); }
+}
+@keyframes ial-loop-stem {
+  0%, 4.4%      { transform: scale(0); animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  11.25%, 86.25%{ transform: none;     animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  91.25%, 100%  { transform: scale(0); }
+}
+@keyframes ial-loop-frame {
+  0%, 6.9%    { transform: scaleY(0); animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  13.75%, 85% { transform: none;      animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  90%, 100%   { transform: scaleY(0); }
+}
+
+/* ---------- leaves: sprout, sway in the breeze, fold away ---------- */
+@keyframes ial-loop-leaf-left {
+  0%, 10.6%  { transform: scale(0) rotate(-18deg); opacity: 0; animation-timing-function: cubic-bezier(.34,1.56,.64,1); }
+  13%        { opacity: 1; }
+  18.75%     { transform: none; opacity: 1; animation-timing-function: ease-in-out; }
+  45%        { transform: rotate(-3deg); animation-timing-function: ease-in-out; }
+  55%        { transform: rotate(1.5deg); animation-timing-function: ease-in-out; }
+  65%, 83.75%{ transform: none; opacity: 1; animation-timing-function: cubic-bezier(.55,0,.75,.2); }
+  88.75%, 100% { transform: scale(0) rotate(-12deg); opacity: 0; }
+}
+@keyframes ial-loop-leaf-right {
+  0%, 12.5%  { transform: scale(0) rotate(-18deg); opacity: 0; animation-timing-function: cubic-bezier(.34,1.56,.64,1); }
+  15%        { opacity: 1; }
+  21.25%     { transform: none; opacity: 1; animation-timing-function: ease-in-out; }
+  48%        { transform: rotate(-2.5deg); animation-timing-function: ease-in-out; }
+  58%        { transform: rotate(1.5deg); animation-timing-function: ease-in-out; }
+  68%, 84.4% { transform: none; opacity: 1; animation-timing-function: cubic-bezier(.55,0,.75,.2); }
+  89.4%, 100%{ transform: scale(0) rotate(-12deg); opacity: 0; }
+}
+
+/* ---------- IAL: rise in, drop out first ---------- */
+@keyframes ial-loop-i {
+  0%, 16.25%   { transform: translateY(115px); animation-timing-function: cubic-bezier(.22,1,.36,1); }
+  22.5%, 82.5% { transform: none; animation-timing-function: cubic-bezier(.55,0,1,.45); }
+  86.9%, 100%  { transform: translateY(115px); }
+}
+@keyframes ial-loop-a {
+  0%, 17.5%    { transform: translateY(115px); animation-timing-function: cubic-bezier(.22,1,.36,1); }
+  23.75%, 83.1%{ transform: none; animation-timing-function: cubic-bezier(.55,0,1,.45); }
+  87.5%, 100%  { transform: translateY(115px); }
+}
+@keyframes ial-loop-l {
+  0%, 18.75%   { transform: translateY(115px); animation-timing-function: cubic-bezier(.22,1,.36,1); }
+  25%, 83.75%  { transform: none; animation-timing-function: cubic-bezier(.55,0,1,.45); }
+  88.1%, 100%  { transform: translateY(115px); }
+}
+
+/* ---------- wordmark (desktop only): enters once, then stays ---------- */
+.ial-wordmark { display: flex; flex-direction: column; gap: 4px; }
+.ial-name {
+  font-weight: 700; font-size: 18px; letter-spacing: .02em; color: var(--ial-name);
+  animation: ial-slide .6s 1.55s cubic-bezier(.22,1,.36,1) both;
+}
+.ial-llp {
+  font-size: 12px; letter-spacing: .12em; color: var(--ial-llp);
+  animation: ial-fade .5s 1.85s ease-out both;
+}
+@media (max-width: 767px) { .ial-wordmark { display: none; } }
+@keyframes ial-slide { from { transform: translateX(-10px); opacity: 0; clip-path: inset(0 100% 0 0); } to { transform: none; opacity: 1; clip-path: inset(0 0 0 0); } }
+@keyframes ial-fade  { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- hover: leaves rustle ---------- */
+.ial-brand:hover .ial-leaves { animation: ial-rustle .9s ease-in-out; }
+@keyframes ial-rustle { 0%,100% { transform: none; } 30% { transform: rotate(-5deg); } 65% { transform: rotate(3deg); } }
+
+/* Respect users who turn off motion: show the finished logo, no loop. */
+@media (prefers-reduced-motion: reduce) {
+  .ial-brand *, .ial-brand *::before { animation: none !important; }
+}

@@ -17,12 +17,24 @@ that does not answer it.  So is anybody whose number is on no customer record,
 and any chat a person has just answered from the inbox: the bot never talks
 over the staff.
 
+Somebody whose number is on neither the customer nor the supplier master - a
+visitor - gets a menu of their own when they greet::
+
+    Welcome to IRAVI AGRO LIFE LLP.  How can we help you?   [ Reach us ]  [ Talk to us ]
+
+    Reach us    -> the office as a location pin
+    Talk to us  -> the phone number and email address
+    then, once, half a minute later -> a thank-you with the Instagram link
+
+A supplier who greets is left to a person, as before.
+
 The states, kept per number in the store::
 
-    menu    the menu was sent; waiting for Ledger or Contact Details
-    choose  their number is on several customer records; waiting for which one
-    more    "any more support?" was asked; waiting for Yes or No
-    done    goodbye said; the next greeting starts the menu again
+    menu     the menu was sent; waiting for Ledger or Contact Details
+    choose   their number is on several customer records; waiting for which one
+    more     "any more support?" was asked; waiting for Yes or No
+    done     goodbye said; the next greeting starts the menu again
+    visitor  the visitor menu was sent; either button may still be tapped
 """
 
 from __future__ import annotations
@@ -46,17 +58,28 @@ from .store import Store
 
 logger = logging.getLogger(__name__)
 
-MENU, CHOOSE, MORE, DONE = "menu", "choose", "more", "done"
+MENU, CHOOSE, MORE, DONE, VISITOR = "menu", "choose", "more", "done", "visitor"
 
 LEDGER, BALANCE, YES, NO = "ledger", "balance", "yes", "no"
+REACH, TALK = "reach_us", "talk_to_us"
 MENU_BUTTONS = [(LEDGER, "Ledger"), (BALANCE, "Balance")]
+VISITOR_BUTTONS = [(REACH, "Reach us"), (TALK, "Talk to us")]
 #: What a typed answer may say instead of tapping a button.
 TYPED = {
     LEDGER: {"1", "ledger", "ledger statement", "statement"},
     BALANCE: {"2", "balance", "outstanding", "outstanding balance", "due", "dues"},
     YES: {"yes", "y", "yeah", "yes please", "ok", "okay"},
     NO: {"no", "n", "nope", "no thanks", "no thank you"},
+    REACH: {"1", "reach us", "reach", "location", "address"},
+    TALK: {"2", "talk to us", "talk", "contact", "call"},
 }
+
+
+def run_later(seconds: float, action: Callable[[], None]) -> None:
+    """Do ``action`` on its own thread after ``seconds``, without holding up the webhook."""
+    timer = threading.Timer(seconds, action)
+    timer.daemon = True
+    timer.start()
 #: Words that may come with a greeting without making it a question.
 COURTESIES = {"sir", "madam", "mam", "maam", "anna", "garu", "ji", "team", "iravi", "agro", "life",
               "bro", "brother", "akka", "bhai", "there", "all", "dear", "everyone", "friend"}
@@ -118,6 +141,10 @@ class ReportsClient:
     def customers_by_mobile(self, wa_id: str) -> List[Dict[str, Any]]:
         number = urllib.parse.quote(wa_id)
         return json.loads(self._open(urllib.request.Request(f"{self.base}/api/customers/by-mobile?number={number}")))
+
+    def suppliers_by_mobile(self, wa_id: str) -> List[Dict[str, Any]]:
+        number = urllib.parse.quote(wa_id)
+        return json.loads(self._open(urllib.request.Request(f"{self.base}/api/suppliers/by-mobile?number={number}")))
 
     def balance(self, account_id: str, as_on: date) -> Dict[str, Any]:
         """What a customer owes today - the figure their statement closes on, with no PDF."""
@@ -319,6 +346,67 @@ class Bot:
         else:
             self._ledger(wa_id, account)
 
+    # ------------------------------------------------------------ visitors
+
+    def _welcome_visitor(self, wa_id: str) -> None:
+        self._buttons(wa_id, self.config.visitor.welcome, VISITOR_BUTTONS)
+
+    def _location(self, wa_id: str) -> None:
+        visitor = self.config.visitor
+        shown = f"📍 {visitor.location_name}\n{visitor.map_link}".strip()
+        if visitor.latitude is None or visitor.longitude is None:
+            self._text(wa_id, shown)
+            return
+        content = {"type": "location", "location": {"latitude": visitor.latitude, "longitude": visitor.longitude,
+                                                    "name": visitor.location_name}}
+        self._send(wa_id, content, shown, kind="location")
+
+    def _thank_later(self, wa_id: str) -> None:
+        """The thank-you, half a minute on - unless a person has written to them meanwhile."""
+        asked_at = int(time.time())  # as the store keeps times: whole seconds
+
+        def thank() -> None:
+            with self._lock(wa_id):
+                human = self.store.last_human_reply(wa_id)
+                if human and human >= asked_at:
+                    return
+                try:
+                    self._text(wa_id, self.config.visitor.thanks)
+                except Exception:  # its own thread: nobody else would hear of it
+                    logger.exception("Could not send the thank-you to %s", wa_id)
+
+        run_later(self.config.visitor.thanks_after_seconds, thank)
+
+    def _greet_visitor(self, wa_id: str, message: Dict[str, Any], greeting: bool) -> bool:
+        """Somebody on no customer record: the visitor menu - unless they are a supplier."""
+        if not self.config.visitor.enabled:
+            return False
+        try:
+            if self.reports.suppliers_by_mobile(wa_id):
+                return False  # a supplier: left to a person
+        except ReportsError as exc:
+            logger.warning("Could not look up %s among the suppliers: %s", wa_id, exc)
+            return False
+        if greeting:
+            self._welcome_visitor(wa_id)
+            self.store.save_session(wa_id, VISITOR, {})
+            return True
+        return self._answer_visitor(wa_id, message, {})  # a button on an old visitor menu
+
+    def _answer_visitor(self, wa_id: str, message: Dict[str, Any], data: Dict[str, Any]) -> bool:
+        choice = understood(message, REACH, TALK)
+        if choice is None:
+            return False  # a question, or a thank-you: for a person
+        if choice == REACH:
+            self._location(wa_id)
+        else:
+            self._text(wa_id, self.config.visitor.contact)
+        if not data.get("thanked"):
+            data = {**data, "thanked": True}
+            self._thank_later(wa_id)
+        self.store.save_session(wa_id, VISITOR, data)
+        return True
+
     # ------------------------------------------------------- the conversation
 
     def handle(self, message: Dict[str, Any]) -> bool:
@@ -345,6 +433,10 @@ class Bot:
         session = self.store.session(wa_id)
         if session and (session["state"] == DONE or now - session["updated_at"] > self.config.idle_minutes * 60):
             session = None
+        # A visitor's greeting looks them up again: their number may have been
+        # put on a customer record since the last one.
+        if session and session["state"] == VISITOR and is_greeting(message.get("body"), self.config.greetings):
+            session = None
 
         asked = asked_for(message)
         if session is None:
@@ -352,8 +444,9 @@ class Bot:
             # tapped on an earlier menu or typed - starts a conversation;
             # anything else is a question for a person.
             tapped = asked is not None
-            if not (message.get("type") == "button" or tapped
-                    or is_greeting(message.get("body"), self.config.greetings)):
+            visitor_tap = (message.get("reply_id") or "").lower() in (REACH, TALK)
+            greeting = is_greeting(message.get("body"), self.config.greetings)
+            if not (message.get("type") == "button" or tapped or visitor_tap or greeting):
                 return False
             try:
                 accounts = self.reports.customers_by_mobile(wa_id)
@@ -361,6 +454,8 @@ class Bot:
                 logger.warning("Could not look up %s: %s", wa_id, exc)
                 return False
             if not accounts:
+                if greeting or visitor_tap:
+                    return self._greet_visitor(wa_id, message, greeting)
                 return False  # not a customer: left to a person
             session = {"state": MENU, "data": {"accounts": accounts}}
             if not tapped:
@@ -370,8 +465,10 @@ class Bot:
             # A button from an earlier menu: do what it asks straight away.
 
         data = session["data"]
-        accounts = data.get("accounts", [])
         state = session["state"]
+        if state == VISITOR:
+            return self._answer_visitor(wa_id, message, data)
+        accounts = data.get("accounts", [])
         if asked and state == MORE:
             # "Any more support?" answered by tapping Balance on an earlier
             # menu: that is a yes, and what they want - so give it.

@@ -55,6 +55,19 @@
     ],
     "farewell": "It was a pleasure serving you, looking forward to a continued partnership with IRAVI AGRO LIFE LLP. 🙏",
     "idle_minutes": 30,
-    "pause_after_human_minutes": 60
+    "pause_after_human_minutes": 60,
+    "//visitor": "A greeting from a number on neither the customer nor the supplier master: Reach us / Talk to us.",
+    "visitor": {
+      "enabled": true,
+      "welcome": "Welcome to IRAVI AGRO LIFE LLP.\n\nHow can we help you?",
+      "location_name": "IRAVI AGRO LIFE LLP",
+      "//latitude": "Reach us sends a location pin here. Blank latitude/longitude: the name and map_link as text.",
+      "latitude": 17.4855564,
+      "longitude": 78.4145767,
+      "map_link": "https://maps.app.goo.gl/tYyU8wLVmwYMdJMV7",
+      "contact": "Feel free to reach out to us on 8977417663 or write to us on info@iraviagrolife.com",
+      "thanks": "Thanks a lot for reaching out to us!\nWe really wish you all the good in the world.\n\nPlease stay connected with us by following us on our social platforms\nInstagram -> https://www.instagram.com/iraviagrolife/",
+      "thanks_after_seconds": 30
+    }
   }
 }
